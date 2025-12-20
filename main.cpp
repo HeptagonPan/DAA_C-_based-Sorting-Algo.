@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <string>
@@ -24,6 +26,32 @@ struct Dataset {
     std::vector<int> values;
 };
 
+int readIntInRange(const std::string& prompt, int minValue, int maxValue) {
+    int value = 0;
+    while (true) {
+        std::cout << prompt;
+        if (std::cin >> value && value >= minValue && value <= maxValue) {
+            return value;
+        }
+        std::cout << "Invalid input. Try again.\n";
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+}
+
+std::size_t readSizeAtLeast(const std::string& prompt, std::size_t minValue) {
+    long long value = 0;
+    while (true) {
+        std::cout << prompt;
+        if (std::cin >> value && value >= static_cast<long long>(minValue)) {
+            return static_cast<std::size_t>(value);
+        }
+        std::cout << "Invalid input. Try again.\n";
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+}
+
 std::vector<int> generateRandomData(std::size_t n,
                                     int minVal,
                                     int maxVal,
@@ -38,6 +66,9 @@ std::vector<int> generateRandomData(std::size_t n,
 }
 
 std::vector<int> generateNearlySortedData(std::size_t n, std::mt19937& rng) {
+    if (n < 2) {
+        return std::vector<int>(n);
+    }
     std::vector<int> data(n);
     std::iota(data.begin(), data.end(), 1);
 
@@ -71,6 +102,33 @@ std::vector<int> generateFewUniqueData(std::size_t n, std::mt19937& rng) {
     return data;
 }
 
+Dataset buildDataset(int choice, std::size_t size, std::mt19937& rng) {
+    switch (choice) {
+        case 1:
+            return {"Random", generateRandomData(size, -50, 50, rng)};
+        case 2:
+            return {"Nearly Sorted", generateNearlySortedData(size, rng)};
+        case 3:
+            return {"Reversed", generateReversedData(size)};
+        case 4:
+            return {"Few Unique", generateFewUniqueData(size, rng)};
+        case 5:
+            return {"Large Random", generateRandomData(size, 0, 100000, rng)};
+        default:
+            return {"Random", generateRandomData(size, -50, 50, rng)};
+    }
+}
+
+std::vector<Dataset> buildDemoDatasets(std::mt19937& rng) {
+    return {
+        {"Random", generateRandomData(15, -50, 50, rng)},
+        {"Nearly Sorted", generateNearlySortedData(20, rng)},
+        {"Reversed", generateReversedData(25)},
+        {"Few Unique", generateFewUniqueData(200, rng)},
+        {"Large Random", generateRandomData(5000, 0, 100000, rng)},
+    };
+}
+
 void printArray(const std::vector<int>& data) {
     std::cout << "[";
     for (std::size_t i = 0; i < data.size(); ++i) {
@@ -97,61 +155,126 @@ void runBenchmarks(const Dataset& dataset) {
         std::cout << "Skipping Bubble Sort and Insertion Sort because n > 1000.\n";
     }
 
-    std::vector<std::pair<std::string, SortFunc>> algorithms;
-    if (!skipSimple) {
-        algorithms.push_back({"Bubble Sort", bubbleSort});
-        algorithms.push_back({"Insertion Sort", insertionSort});
-    }
-    algorithms.push_back({"Merge Sort", mergeSort});
-    algorithms.push_back({"Quick Sort", quickSort});
-
-    std::cout << std::left << std::setw(15) << "Algorithm" << std::setw(15)
-              << "Comparisons"
-              << "Time (ms)\n";
-    std::cout << std::string(15 + 15 + 12, '-') << "\n";
+    struct AlgorithmEntry {
+        std::string name;
+        SortFunc func;
+        bool skipWhenLarge;
+    };
+    const std::vector<AlgorithmEntry> algorithms = {
+        {"Bubble Sort", bubbleSort, true},
+        {"Insertion Sort", insertionSort, true},
+        {"Merge Sort", mergeSort, false},
+        {"Quick Sort", quickSort, false},
+    };
 
     struct NamedResult {
         std::string name;
-        SortResult result;
+        bool skipped{false};
+        SortResult result{};
     };
     std::vector<NamedResult> results;
     results.reserve(algorithms.size());
 
     for (const auto& algo : algorithms) {
-        SortResult res = benchmarkSort(data, algo.second);
-        results.push_back({algo.first, res});
-        std::cout << std::left << std::setw(15) << algo.first << std::setw(15)
-                  << res.comparisons << std::fixed << std::setprecision(3)
-                  << res.time_ms << "\n";
+        if (skipSimple && algo.skipWhenLarge) {
+            results.push_back({algo.name, true, {}});
+            continue;
+        }
+        SortResult res = benchmarkSort(data, algo.func);
+        results.push_back({algo.name, false, res});
+    }
+
+    std::size_t nameWidth = std::string("Algorithm").size();
+    for (const auto& r : results) {
+        nameWidth = std::max(nameWidth, r.name.size());
+    }
+    nameWidth += 2;
+
+    const std::size_t compWidth =
+        std::max<std::size_t>(12, std::string("Comparisons").size() + 2);
+    const std::size_t timeWidth =
+        std::max<std::size_t>(12, std::string("Time (ms)").size() + 2);
+
+    std::cout << std::left << std::setw(static_cast<int>(nameWidth))
+              << "Algorithm" << std::setw(static_cast<int>(compWidth))
+              << "Comparisons" << std::setw(static_cast<int>(timeWidth))
+              << "Time (ms)" << "\n";
+    std::cout << std::string(nameWidth + compWidth + timeWidth, '-') << "\n";
+
+    for (const auto& r : results) {
+        std::cout << std::left << std::setw(static_cast<int>(nameWidth))
+                  << r.name;
+        if (r.skipped) {
+            std::cout << std::setw(static_cast<int>(compWidth)) << "skipped"
+                      << std::setw(static_cast<int>(timeWidth)) << "skipped"
+                      << "\n";
+        } else {
+            std::cout << std::setw(static_cast<int>(compWidth))
+                      << r.result.comparisons << std::fixed
+                      << std::setprecision(3)
+                      << std::setw(static_cast<int>(timeWidth))
+                      << r.result.time_ms << "\n";
+        }
     }
 
     if (!results.empty()) {
-        NamedResult best = results.front();
+        const double epsilon = 1e-6;
+        bool bestSet = false;
+        NamedResult best;
         for (const auto& r : results) {
-            const bool faster = r.result.time_ms < best.result.time_ms;
+            if (r.skipped) {
+                continue;
+            }
+            if (!bestSet) {
+                best = r;
+                bestSet = true;
+                continue;
+            }
+            const bool faster =
+                r.result.time_ms + epsilon < best.result.time_ms;
             const bool tie =
-                r.result.time_ms == best.result.time_ms &&
+                std::abs(r.result.time_ms - best.result.time_ms) <= epsilon &&
                 r.result.comparisons < best.result.comparisons;
             if (faster || tie) {
                 best = r;
             }
         }
-        std::cout << "Actual best: " << best.name << " (time="
-                  << std::fixed << std::setprecision(3) << best.result.time_ms
-                  << " ms, comparisons=" << best.result.comparisons << ")\n";
+        if (bestSet) {
+            std::cout << "Actual best: " << best.name << " (time="
+                      << std::fixed << std::setprecision(3)
+                      << best.result.time_ms
+                      << " ms, comparisons=" << best.result.comparisons
+                      << ")\n";
+        }
     }
 }
 
 int main() {
     std::mt19937 rng(42);  // Fixed seed for reproducibility across runs.
 
-    std::vector<Dataset> datasets = {
-        {"Random", generateRandomData(15, -50, 50, rng)},
-        {"Nearly Sorted", generateNearlySortedData(20, rng)},
-        {"Reversed", generateReversedData(25)},
-        {"Few Unique", generateFewUniqueData(200, rng)},
-        {"Large Random", generateRandomData(5000, 0, 100000, rng)},
-    };
+    std::cout << "Sorting Benchmark\n";
+    std::cout << "1) Demo datasets\n";
+    std::cout << "2) Custom dataset\n";
+    int mode = readIntInRange("Select mode (1-2): ", 1, 2);
+
+    std::vector<Dataset> datasets;
+    if (mode == 1) {
+        datasets = buildDemoDatasets(rng);
+    } else {
+        std::cout << "Dataset types:\n";
+        std::cout << "1) Random\n";
+        std::cout << "2) Nearly Sorted\n";
+        std::cout << "3) Reversed\n";
+        std::cout << "4) Few Unique\n";
+        std::cout << "5) Large Random (n > 1000)\n";
+        int choice = readIntInRange("Select dataset type (1-5): ", 1, 5);
+        std::size_t minSize = (choice == 5) ? 1001 : 1;
+        std::string prompt =
+            (choice == 5) ? "Enter dataset size (> 1000): "
+                          : "Enter dataset size: ";
+        std::size_t size = readSizeAtLeast(prompt, minSize);
+        datasets.push_back(buildDataset(choice, size, rng));
+    }
 
     for (const auto& ds : datasets) {
         runBenchmarks(ds);
