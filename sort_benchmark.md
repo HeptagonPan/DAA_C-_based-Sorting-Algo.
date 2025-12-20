@@ -5,6 +5,7 @@
 - `benchmarkSort` 使用 `std::chrono::high_resolution_clock` 计时，毫秒返回，并校验结果有序性。
 - 数据集规模大于 1000 时自动跳过冒泡/插入，仍运行归并与快速。
 - 小数组（n <= 20）会打印原始数组；所有算法输出比较次数与耗时，并标注实际最佳（耗时最少，平局看比较次数）。
+- 支持交互模式（自定义数据集类型和规模）与演示模式（预置多种数据集）。
 
 ## 文件
 - `main.cpp`：示例驱动，生成多种数据集并打印结果。
@@ -15,6 +16,10 @@
 g++ -std=c++17 main.cpp sorts.cpp -o sort_benchmark
 ./sort_benchmark   # Windows 使用 sort_benchmark.exe
 ```
+
+运行后可选择：
+- Demo datasets：一次性跑多种预置数据集。
+- Custom dataset：选择数据集类型与规模（Large Random 需 > 1000）。
 
 ## 关键接口（位于 sorts.cpp 顶部）
 ```cpp
@@ -41,4 +46,4 @@ void quickSort(std::vector<int>& a, long long& cmp);
 - 大随机（触发跳过冒泡/插入）
 
 ## 下一步可选
-1) 扩展更多数据集或自定义规模；2) 增加 AI 预测模块与实际最佳对比；3) 添加单元测试校验计数与有序性。***
+1) 扩展更多数据集或自定义规模；2) 增加 AI 预测模块与实际最佳对比；3) 添加单元测试校验计数与有序性。
