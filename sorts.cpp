@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 // Shared structs and aliases (moved from header to keep only .cpp files).
@@ -73,6 +74,33 @@ std::size_t partition(std::vector<int>& a,
                       std::size_t low,
                       std::size_t high,
                       long long& comparisons) {
+    std::size_t mid = low + (high - low) / 2;
+    // Median-of-three pivot selection to reduce worst-case behavior.
+    std::size_t pivotIndex = low;
+    if (high - low < 2) {
+        pivotIndex = high;
+    } else {
+        ++comparisons;
+        if (a[low] < a[mid]) {
+            ++comparisons;
+            if (a[mid] < a[high]) {
+                pivotIndex = mid;
+            } else {
+                ++comparisons;
+                pivotIndex = (a[low] < a[high]) ? high : low;
+            }
+        } else {
+            ++comparisons;
+            if (a[low] < a[high]) {
+                pivotIndex = low;
+            } else {
+                ++comparisons;
+                pivotIndex = (a[mid] < a[high]) ? high : mid;
+            }
+        }
+    }
+
+    std::swap(a[pivotIndex], a[high]);
     int pivot = a[high];
     std::ptrdiff_t i = static_cast<std::ptrdiff_t>(low) - 1;
 
@@ -88,22 +116,6 @@ std::size_t partition(std::vector<int>& a,
     return static_cast<std::size_t>(i + 1);
 }
 
-void quickSortImpl(std::vector<int>& a,
-                   std::size_t low,
-                   std::size_t high,
-                   long long& comparisons) {
-    if (low >= high) {
-        return;
-    }
-
-    std::size_t pivotIndex = partition(a, low, high, comparisons);
-    if (pivotIndex > 0) {
-        quickSortImpl(a, low, pivotIndex - 1, comparisons);
-    }
-    if (pivotIndex + 1 <= high) {
-        quickSortImpl(a, pivotIndex + 1, high, comparisons);
-    }
-}
 }  // namespace
 
 SortResult benchmarkSort(const std::vector<int>& input, SortFunc sorter) {
@@ -175,7 +187,42 @@ void quickSort(std::vector<int>& a, long long& comparisons) {
     if (a.size() < 2) {
         return;
     }
-    quickSortImpl(a, 0, a.size() - 1, comparisons);
+    std::vector<std::pair<std::size_t, std::size_t>> stack;
+    stack.push_back({0, a.size() - 1});
+
+    while (!stack.empty()) {
+        const auto range = stack.back();
+        stack.pop_back();
+        std::size_t low = range.first;
+        std::size_t high = range.second;
+
+        if (low >= high) {
+            continue;
+        }
+
+        std::size_t pivotIndex = partition(a, low, high, comparisons);
+        const bool hasLeft = pivotIndex > low;
+        const bool hasRight = pivotIndex + 1 < high;
+
+        std::size_t leftSize = hasLeft ? pivotIndex - low : 0;
+        std::size_t rightSize = hasRight ? high - pivotIndex : 0;
+
+        if (leftSize > rightSize) {
+            if (hasLeft) {
+                stack.push_back({low, pivotIndex - 1});
+            }
+            if (hasRight) {
+                stack.push_back({pivotIndex + 1, high});
+            }
+        } else {
+            if (hasRight) {
+                stack.push_back({pivotIndex + 1, high});
+            }
+            if (hasLeft) {
+                stack.push_back({low, pivotIndex - 1});
+            }
+        }
+    }
 }
 
 bool isSorted(const std::vector<int>& data) {
