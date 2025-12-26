@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "ai.h"
+
 // Forward declarations (no header file, per requirements).
 struct SortResult {
     long long comparisons{0};
@@ -145,11 +147,20 @@ void runBenchmarks(const Dataset& dataset) {
     const std::size_t n = data.size();
 
     std::cout << "\n=== Dataset: " << dataset.name << " (n=" << n << ") ===\n";
+    
+    // Print original array for small datasets only
     if (n <= 20) {
         std::cout << "Original: ";
         printArray(data);
     }
 
+    // 1. Get AI prediction before running benchmarks
+    std::string prediction = predictBestAlgorithm(data);
+    std::cout << "--------------------------------------------------\n";
+    std::cout << ">> AI Prediction: " << prediction << "\n";
+    std::cout << "--------------------------------------------------\n";
+
+    // For large datasets, skip slow O(N^2) algorithms
     const bool skipSimple = n > 1000;
     if (skipSimple) {
         std::cout << "Skipping Bubble Sort and Insertion Sort because n > 1000.\n";
@@ -160,6 +171,8 @@ void runBenchmarks(const Dataset& dataset) {
         SortFunc func;
         bool skipWhenLarge;
     };
+    
+    // List of algorithms to test
     const std::vector<AlgorithmEntry> algorithms = {
         {"Bubble Sort", bubbleSort, true},
         {"Insertion Sort", insertionSort, true},
@@ -175,15 +188,18 @@ void runBenchmarks(const Dataset& dataset) {
     std::vector<NamedResult> results;
     results.reserve(algorithms.size());
 
+    // Run benchmarks for each algorithm
     for (const auto& algo : algorithms) {
         if (skipSimple && algo.skipWhenLarge) {
             results.push_back({algo.name, true, {}});
             continue;
         }
+        // Measure performance (Time and Comparisons)
         SortResult res = benchmarkSort(data, algo.func);
         results.push_back({algo.name, false, res});
     }
 
+    // Formatting output table
     std::size_t nameWidth = std::string("Algorithm").size();
     for (const auto& r : results) {
         nameWidth = std::max(nameWidth, r.name.size());
@@ -201,6 +217,7 @@ void runBenchmarks(const Dataset& dataset) {
               << "Time (ms)" << "\n";
     std::cout << std::string(nameWidth + compWidth + timeWidth, '-') << "\n";
 
+    // Print results row by row
     for (const auto& r : results) {
         std::cout << std::left << std::setw(static_cast<int>(nameWidth))
                   << r.name;
@@ -217,34 +234,44 @@ void runBenchmarks(const Dataset& dataset) {
         }
     }
 
+    // Determine the actual best algorithm
     if (!results.empty()) {
         const double epsilon = 1e-6;
         bool bestSet = false;
         NamedResult best;
+        
         for (const auto& r : results) {
-            if (r.skipped) {
-                continue;
-            }
+            if (r.skipped) continue;
+            
             if (!bestSet) {
                 best = r;
                 bestSet = true;
                 continue;
             }
-            const bool faster =
-                r.result.time_ms + epsilon < best.result.time_ms;
-            const bool tie =
-                std::abs(r.result.time_ms - best.result.time_ms) <= epsilon &&
-                r.result.comparisons < best.result.comparisons;
+            
+            // Compare time (primary) and comparisons (secondary)
+            const bool faster = r.result.time_ms + epsilon < best.result.time_ms;
+            const bool tie = std::abs(r.result.time_ms - best.result.time_ms) <= epsilon &&
+                             r.result.comparisons < best.result.comparisons;
+            
             if (faster || tie) {
                 best = r;
             }
         }
+
         if (bestSet) {
             std::cout << "Actual best: " << best.name << " (time="
                       << std::fixed << std::setprecision(3)
                       << best.result.time_ms
                       << " ms, comparisons=" << best.result.comparisons
                       << ")\n";
+
+            // 2. Verify if AI prediction was correct
+            if (prediction == best.name) {
+                std::cout << "Result: AI was CORRECT! ( ^_^ )\n";
+            } else {
+                std::cout << "Result: AI was WRONG. ( >_< )\n";
+            }
         }
     }
 }
