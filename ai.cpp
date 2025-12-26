@@ -1,59 +1,66 @@
 #include "ai.h"
+
+#include <unordered_set>
 #include <vector>
 #include <string>
-#include <algorithm> // for max
-#include <cmath>     // for abs
 
 // ==========================================
 // AI MODULE IMPLEMENTATION
 // Strategy: Rule-based Decision Tree
+// Features: size, sortedness, unique_ratio
 // ==========================================
 
-// Helper: Calculate "Sortedness" Feature
-// Checks what percentage of the array is already sorted.
-// Returns: 0.0 (random) to 1.0 (perfectly sorted)
+// Sortedness: proportion of adjacent pairs already in non-decreasing order
 double calculateSortedness(const std::vector<int>& data) {
-    if (data.empty()) return 0.0;
-    
-    int n = data.size();
-    int correct_order_count = 0;
+    const size_t n = data.size();
+    if (n < 2) return 1.0; // empty or 1-element is "fully sorted"
 
-    // Loop through the array and count sorted pairs
-    for (int i = 0; i < n - 1; ++i) {
-        if (data[i] <= data[i + 1]) {
-            correct_order_count++;
-        }
+    long long inOrder = 0;
+    for (size_t i = 0; i + 1 < n; ++i) {
+        if (data[i] <= data[i + 1]) inOrder++;
     }
-
-    // Return the ratio (count / total pairs)
-    return (double)correct_order_count / (n - 1);
+    return static_cast<double>(inOrder) / static_cast<double>(n - 1);
 }
 
-// Main AI Prediction Function
-// Uses features (Size, Sortedness) to choose the best algorithm.
+// Unique ratio: (#unique values) / n
+double calculateUniqueRatio(const std::vector<int>& data) {
+    const size_t n = data.size();
+    if (n == 0) return 0.0;
+
+    std::unordered_set<int> s;
+    s.reserve(n);
+    for (int x : data) s.insert(x);
+
+    return static_cast<double>(s.size()) / static_cast<double>(n);
+}
+
 std::string predictBestAlgorithm(const std::vector<int>& data) {
-    int n = data.size();
-    
-    // Step 1: Extract features
-    double sortedness = calculateSortedness(data);
+    const size_t n = data.size();
+    const double sortedness  = calculateSortedness(data);
+    const double uniqueRatio = calculateUniqueRatio(data);
 
-    // Step 2: Decision Tree Logic (Rules)
+    // --------------------------
+    // Decision Tree Rules
+    // --------------------------
 
-    // Rule 1: Very small dataset?
-    // Insertion Sort is fastest for small arrays because of low overhead.
-    if (n <= 50) {
-        return "Insertion Sort";
+    // Rule 0: tiny arrays — simple sorts are fine
+    if (n <= 30) {
+        // if already quite sorted, insertion is usually best
+        if (sortedness > 0.80) return "Insertion Sort";
+        return "Bubble Sort";
     }
 
-    // Rule 2: Is the data nearly sorted?
-    // If sortedness is high (e.g., > 85%), Insertion Sort is O(N).
-    // It is faster than Quick Sort (O(N log N)) in this case.
+    // Rule 1: nearly sorted — insertion is great (close to O(n))
     if (sortedness > 0.85) {
         return "Insertion Sort";
     }
 
-    // Rule 3: Default choice for large, random data
-    // Quick Sort is generally the best for random, large arrays.
-    // (Note: Your Quick Sort implementation is robust).
+    // Rule 2: many duplicates — prefer Merge Sort (more stable performance)
+    // (few-unique dataset often makes partitioning less ideal for quick sort)
+    if (uniqueRatio < 0.25) {
+        return "Merge Sort";
+    }
+
+    // Rule 3: default — large/random
     return "Quick Sort";
 }
