@@ -10,5 +10,5 @@ Our group project of 2025/09 sem Design and Analysis of Algorithm.
 
 编译示例：
 ```bash
-g++ -std=c++17 main.cpp sorts.cpp -o sort_benchmark
+g++ -std=c++17 main.cpp sorts.cpp ai.cpp -o sort_benchmark
 ```
