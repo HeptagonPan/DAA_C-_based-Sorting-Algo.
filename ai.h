@@ -1,19 +1,17 @@
 #ifndef AI_H
 #define AI_H
 
-#include <vector>
 #include <string>
+#include <vector>
 
-// ==========================================
-// AI MODULE HEADER
-// ==========================================
-
-// Calculate how many elements are already in order (0.0 to 1.0)
+// Feature 1: sortedness in [0, 1]
 double calculateSortedness(const std::vector<int>& data);
 
-// Main function: Predict the best sorting algorithm
-// Input: The dataset array
-// Output: The name of the algorithm (e.g., "Quick Sort")
+// Feature 2: unique ratio in [0, 1]
+double calculateUniqueRatio(const std::vector<int>& data);
+
+// Return exactly one of:
+// "Bubble Sort", "Insertion Sort", "Merge Sort", "Quick Sort"
 std::string predictBestAlgorithm(const std::vector<int>& data);
 
 #endif
