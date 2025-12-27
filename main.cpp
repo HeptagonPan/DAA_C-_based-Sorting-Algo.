@@ -142,7 +142,7 @@ void printArray(const std::vector<int>& data) {
     std::cout << "]\n";
 }
 
-void runBenchmarks(const Dataset& dataset) {
+void runBenchmarks(const Dataset& dataset, AIMode aiMode) {
     const auto& data = dataset.values;
     const std::size_t n = data.size();
 
@@ -154,9 +154,10 @@ void runBenchmarks(const Dataset& dataset) {
         printArray(data);
     }
 
-    // 1. Get AI prediction before running benchmarks
-    std::string prediction = predictBestAlgorithm(data);
+    // 1) Get AI prediction before running benchmarks
+    std::string prediction = predictBestAlgorithm(data, aiMode);
     std::cout << "--------------------------------------------------\n";
+    std::cout << ">> AI Module    : " << aiModeName(aiMode) << "\n";
     std::cout << ">> AI Prediction: " << prediction << "\n";
     std::cout << "--------------------------------------------------\n";
 
@@ -284,6 +285,14 @@ int main() {
     std::cout << "2) Custom dataset\n";
     int mode = readIntInRange("Select mode (1-2): ", 1, 2);
 
+    // AI module selection (for demo + custom modes)
+    std::cout << "\nAI modules:\n";
+    std::cout << "1) Decision Tree\n";
+    std::cout << "2) k-NN\n";
+    std::cout << "3) Custom Rules\n";
+    int aiChoice = readIntInRange("Select AI module (1-3): ", 1, 3);
+    AIMode aiMode = static_cast<AIMode>(aiChoice);
+
     std::vector<Dataset> datasets;
     if (mode == 1) {
         datasets = buildDemoDatasets(rng);
@@ -304,7 +313,7 @@ int main() {
     }
 
     for (const auto& ds : datasets) {
-        runBenchmarks(ds);
+        runBenchmarks(ds, aiMode);
     }
 
     return 0;
