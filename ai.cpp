@@ -60,6 +60,13 @@ static std::string predictDecisionTree(const std::vector<int>& data) {
     const double sortedness = calculateSortedness(data);
     const double uniq = calculateUniqueRatio(data);
 
+    // Rule A0: Tiny and not-nearly-sorted -> Bubble as educational baseline
+    // (We only allow Bubble on very small inputs to satisfy 4-choice output and keep accuracy stable.)
+    if (n <= 30) {
+        if (sortedness < 0.80) return "Bubble Sort";
+        return "Insertion Sort";
+    }
+
     // Rule A: Very small arrays -> Insertion (low overhead)
     if (n <= 50) return "Insertion Sort";
 
@@ -108,6 +115,9 @@ static std::string predictKNN(const std::vector<int>& data) {
     // (size, sortedness, unique) -> label
     static const std::vector<Prototype> protos = {
         // small
+        // tiny unsorted baseline
+        {normLogSize(20), 0.30, 0.90, "Bubble Sort"},
+        {normLogSize(30), 0.20, 0.90, "Bubble Sort"},
         {normLogSize(20), 0.50, 0.90, "Insertion Sort"},
         {normLogSize(50), 0.95, 0.90, "Insertion Sort"},
         // nearly sorted
@@ -138,27 +148,32 @@ static std::string predictKNN(const std::vector<int>& data) {
                      [](auto& a, auto& b) { return a.first < b.first; });
 
     // Majority vote among k nearest.
-    int countIns = 0, countMer = 0, countQui = 0;
+    int countBub = 0, countIns = 0, countMer = 0, countQui = 0;
     for (int i = 0; i < k; ++i) {
         const std::string label = dist[i].second;
-        if (label == "Insertion Sort") ++countIns;
+        if (label == "Bubble Sort") ++countBub;
+        else if (label == "Insertion Sort") ++countIns;
         else if (label == "Merge Sort") ++countMer;
         else if (label == "Quick Sort") ++countQui;
     }
-    if (countIns >= countMer && countIns >= countQui) return "Insertion Sort";
-    if (countMer >= countIns && countMer >= countQui) return "Merge Sort";
-    return "Quick Sort";
+    if (countIns >= countBub && countIns >= countMer && countIns >= countQui) return "Insertion Sort";
+    if (countMer >= countBub && countMer >= countIns && countMer >= countQui) return "Merge Sort";
+    if (countQui >= countBub && countQui >= countIns && countQui >= countMer) return "Quick Sort";
+    return "Bubble Sort";
 }
 
 // ------------------------------
 // Mode 3: Custom Rules (tuned)
 // This is the place to reflect your "final" rules,
-// e.g., include unique_ratio and a Merge rule.
+// e.g., include unique_ratio, a Merge rule, and a tiny-input Bubble baseline.
 // ------------------------------
 static std::string predictCustomRules(const std::vector<int>& data) {
     const int n = static_cast<int>(data.size());
     const double sortedness = calculateSortedness(data);
     const double uniq = calculateUniqueRatio(data);
+
+    // Tiny and not-nearly-sorted -> Bubble as educational baseline
+    if (n <= 30 && sortedness < 0.80) return "Bubble Sort";
 
     // Tuned thresholds (you can mention these in the report)
     const int smallN = 60;
@@ -198,3 +213,4 @@ std::string predictBestAlgorithm(const std::vector<int>& data, AIMode mode) {
 std::string predictBestAlgorithm(const std::vector<int>& data) {
     return predictBestAlgorithm(data, AIMode::DecisionTree);
 }
+
