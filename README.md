@@ -1,37 +1,42 @@
 
 # AI-Driven Sorting Algorithm Optimizer
 
-> **CST207 Design and Analysis of Algorithms - Group Project (2025/09)**
+This project is a C++17 application that benchmarks different sorting algorithms. It includes an AI module that analyzes dataset characteristics (size, sortedness, and uniqueness) to predict which sorting algorithm will perform best before running them.
 
-This is an intelligent sorting system built with C++17. It solves the problem that "no single sorting algorithm fits all situations." The system uses an **AI Module** to analyze dataset features (such as size, sortedness, and unique ratio) before sorting. It automatically predicts and selects the best algorithm to optimize performance.
+## Overview
 
-## Project Introduction
+The system simulates a smart library that automatically selects the most efficient sorting method. It compares the AI's prediction against the actual execution time and comparison counts of standard algorithms.
 
-In modern software, choosing the right algorithm for different datasets is critical. This library simulates a real-world scenario:
+### Supported Algorithms
 
-1. **Algorithms** : Includes Bubble Sort, Insertion Sort, Merge Sort, and Quick Sort.
-2. **Datasets** : Supports Random, Nearly Sorted, Reversed, and Few Unique value datasets.
-3. **Smart Decision** : Integrates  **Decision Tree** ,  **k-NN** , and  **Custom Rules** . The prediction is lightweight ( **$O(N)$** ).
-4. **Benchmarking** : Accurately measures execution time (ms) and comparison counts, and verifies if the AI prediction was correct.
+* **Bubble Sort** : Used as a baseline and for educational comparison.
+* **Insertion Sort** : Optimized for small or nearly sorted datasets.
+* **Merge Sort** : A stable algorithm used for datasets with many duplicates or worst-case ordering.
+* **Quick Sort** : The default choice for general large, random datasets.
 
-## Core Features
+### Supported Datasets
 
-* **Linear Efficiency** : Feature extraction (sortedness, unique ratio) is strictly  **$O(N)$** . It uses hash sets to ensure the prediction process has "zero overhead."
-* **Robustness & Safety** : Includes defensive checks to prevent crashes on empty or single-element arrays. It detects high duplicates (Unique Ratio) and switches to Merge Sort to avoid Quick Sort's worst-case scenarios.
-* **Hardware Awareness** : For tiny datasets ( **$N \le 30$** ), it intelligently switches to simple sorts (Insertion/Bubble) to utilize CPU cache locality and avoid recursion overhead.
-* **Full Benchmarking** : Generates a performance table (Time & Comparisons). It automatically skips **$O(N^2)$** algorithms for large datasets ( **$N > 1000$** ) to save time.
+* **Random** : Completely random integers.
+* **Nearly Sorted** : Sorted data with a few random swaps.
+* **Reversed** : Data sorted in descending order.
+* **Few Unique** : Data containing many duplicate values.
+* **Large Random** : Large datasets (N > 1000) where O(N^2) algorithms are skipped.
 
-## Tech Stack
+## Key Features
 
-* **Language** : C++17
-* **Dependencies** : Standard Library (STL) - `<vector>`, `<algorithm>`, `<chrono>`, `<unordered_set>`, `<random>`
-* **Build Tool** : g++ / clang++ (supporting C++17)
+* **Linear Efficiency** : The AI analyzes data features (Sortedness and Unique Ratio) in strict **O(N)** time. This ensures the prediction process is extremely fast and adds negligible overhead.
+* **Safety and Robustness** : The code includes defensive checks for edge cases, such as empty arrays or single-element arrays, preventing division-by-zero errors and crashes.
+* **Hardware Awareness** : For very small datasets (N <= 30), the system intelligently switches to simple algorithms (Insertion/Bubble Sort) to avoid the recursion overhead of Quick Sort and Merge Sort.
+* **Benchmarking** : Accurately measures execution time (in milliseconds) and the number of comparisons made by each algorithm.
 
-## Quick Start
+## Requirements
 
-### 1. Compile the Project
+* A C++ compiler that supports C++17 (e.g., GCC, Clang, MSVC).
+* Standard Template Library (STL).
 
-Ensure your compiler supports C++17. Run the following command in your terminal:
+## Compilation
+
+To compile the project, run the following command in your terminal:
 
 **Bash**
 
@@ -39,9 +44,11 @@ Ensure your compiler supports C++17. Run the following command in your terminal:
 g++ -std=c++17 main.cpp sorts.cpp ai.cpp -o sort_benchmark
 ```
 
-*(Windows users please use `sort_benchmark.exe` as the output filename)*
+*Note: Windows users may prefer to output as `sort_benchmark.exe`.*
 
-### 2. Run the Program
+## Usage
+
+Run the compiled program:
 
 **Bash**
 
@@ -49,42 +56,40 @@ g++ -std=c++17 main.cpp sorts.cpp ai.cpp -o sort_benchmark
 ./sort_benchmark
 ```
 
-### 3. Usage Guide
-
-The program provides an interactive menu:
+The program offers an interactive menu with the following steps:
 
 1. **Select Mode** :
 
-* `Demo datasets`: Automatically runs a set of preset test cases (covering various types and sizes).
-* `Custom dataset`: Manually select dataset type and size.
+* **Demo datasets** : Runs a predefined set of tests covering various scenarios.
+* **Custom dataset** : Allows you to specify the data type and size.
 
 1. **Select AI Mode** :
 
-* `Decision Tree`: Rule-based decision tree (Recommended).
-* `k-NN`: Prototype-based k-Nearest Neighbors.
-* `Custom Rules`: Tuned hybrid rules.
+* **Decision Tree** : Uses rule-based logic (Recommended).
+* **k-NN** : Uses a prototype-based nearest neighbor classifier.
+* **Custom Rules** : Uses tuned hybrid rules.
 
 1. **View Results** :
 
-* The program outputs the AI prediction.
-* It runs all algorithms and displays a performance table.
-* It verifies if the AI prediction was **Correct** or  **Wrong** .
+* The program prints the AI's prediction.
+* It runs the algorithms and displays a table of results.
+* It compares the prediction with the actual best result to verify accuracy.
 
-## AI Module Logic (Decision Tree)
+## AI Decision Logic
 
-The AI analyzes three features:  **Size (**$N$**)** ,  **Sortedness (**$S$**)** , and  **Unique Ratio (**$U$**)** .
+The default AI mode (Decision Tree) uses the following logic to select algorithms:
 
-| **Scenario**        | **Condition**      | **Algorithm**          | **Design Reason**                                                                                                                         |
-| ------------------------- | ------------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tiny Data**       | **$N \le 30$**   | **Bubble / Insertion** | **Hardware Awareness** : Avoids recursion overhead and uses cache locality. Uses Bubble for educational baselines or Insertion otherwise. |
-| **Small Data**      | **$N \le 50$**   | **Insertion Sort**     | **Low Overhead** : Simple algorithms are usually faster than**$O(N \log N)$**at this scale.                                             |
-| **Nearly Sorted**   | **$S \ge 0.90$** | **Insertion Sort**     | **Algorithm Property** : Insertion Sort is nearly**$O(N)$**for sorted data.                                                             |
-| **Many Duplicates** | **$U \le 0.20$** | **Merge Sort**         | **Risk Aversion** : Prevents Quick Sort performance degradation caused by unbalanced partitioning.                                        |
-| **Highly Reversed** | **$S \le 0.10$** | **Merge Sort**         | **Stability** : Guarantees consistent performance even in worst-case ordering.                                                            |
-| **Default**         | Others                   | **Quick Sort**         | **Average Best** : Quick Sort is generally the fastest for large, random datasets.                                                        |
+| **Condition**           | **Selected Algorithm** | **Reason**                                           |
+| ----------------------------- | ---------------------------- | ---------------------------------------------------------- |
+| **Size <= 30**          | Bubble / Insertion           | Low overhead for tiny arrays (Hardware Awareness).         |
+| **Size <= 50**          | Insertion Sort               | Simple sorts are faster than O(N log N) at this scale.     |
+| **Sortedness >= 90%**   | Insertion Sort               | Runs in near O(N) time for sorted data.                    |
+| **Unique Ratio <= 20%** | Merge Sort                   | Handles duplicates better than Quick Sort (Risk Aversion). |
+| **Sortedness <= 10%**   | Merge Sort                   | Consistent performance for reversed data.                  |
+| **Default**             | Quick Sort                   | Fastest for general large, random data.                    |
 
 ## Project Structure
 
-* `main.cpp`: Entry point. Handles user input, dataset generation, benchmarking flow, and output.
-* `ai.cpp` / `ai.h`:  **AI Core** . Contains feature extraction functions (`calculateSortedness`, `calculateUniqueRatio`) and the three prediction modes.
-* `sorts.cpp`:  **Sorting Implementation** . Contains Bubble, Insertion, Merge, and Quick Sort with comparison counting and timing.
+* **main.cpp** : Entry point. Handles user input, dataset generation, and the benchmarking loop.
+* **ai.cpp / ai.h** : Contains the feature extraction logic and the AI prediction models.
+* **sorts.cpp** : Contains the implementation of the four sorting algorithms.
