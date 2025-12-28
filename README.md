@@ -1,97 +1,90 @@
 
-# AI 驱动的排序算法优化器 (AI-Driven Sorting Algorithm Optimizer)
+# AI-Driven Sorting Algorithm Optimizer
 
 > **CST207 Design and Analysis of Algorithms - Group Project (2025/09)**
 
-这是一个基于 C++17 开发的智能排序系统。该项目旨在解决“没有一种排序算法能适应所有情况”的问题。系统通过 **AI 模块（AI Module）** 在运行排序前分析数据集特征（如大小、有序度、重复率），自动预测并选择最适合的排序算法，从而实现性能最优化。
+This is an intelligent sorting system built with C++17. It solves the problem that "no single sorting algorithm fits all situations." The system uses an **AI Module** to analyze dataset features (such as size, sortedness, and unique ratio) before sorting. It automatically predicts and selects the best algorithm to optimize performance.
 
-## 项目简介
+## Project Introduction
 
-在现代软件应用中，针对不同特征的数据集选择合适的算法至关重要。本项目实现了一个模拟真实场景的库：
+In modern software, choosing the right algorithm for different datasets is critical. This library simulates a real-world scenario:
 
-1. **多样的算法实现** ：包含冒泡、插入、归并、快速排序。
-2. **多样的测试数据** ：支持随机、近乎有序、逆序、由少量唯一值组成的数据集。
-3. **智能决策** ：集成  **决策树 (Decision Tree)** 、**k-NN** 和 **自定义规则** 三种 AI 模式，实现 **$O(N)$** 级轻量级预测。
-4. **性能基准测试** ：精确测量运行时间（毫秒）和比较次数，并验证 AI 预测的准确性。
+1. **Algorithms** : Includes Bubble Sort, Insertion Sort, Merge Sort, and Quick Sort.
+2. **Datasets** : Supports Random, Nearly Sorted, Reversed, and Few Unique value datasets.
+3. **Smart Decision** : Integrates  **Decision Tree** ,  **k-NN** , and  **Custom Rules** . The prediction is lightweight ( **$O(N)$** ).
+4. **Benchmarking** : Accurately measures execution time (ms) and comparison counts, and verifies if the AI prediction was correct.
 
-## 核心特性
+## Core Features
 
-* **线性效率 (Linear Efficiency)** ：特征提取（有序度、重复率）严格控制在 **$O(N)$** 时间复杂度，利用哈希表加速，确保预测过程本身“零成本”。
-* **鲁棒性与安全性 (Robustness & Safety)** ：包含防御性编程，防止空数组或单元素数组导致的除零错误或崩溃；通过检测重复率（Unique Ratio）自动切换至归并排序，规避快速排序的最坏情况。
-* **硬件感知 (Hardware Awareness)** ：针对微小数据集（**$N \le 30$**），利用 CPU 缓存局部性，智能切换至简单排序（插入/冒泡），避免递归开销。
-* **完整基准测试** ：自动生成对比表格，包含 Time (ms) 和 Comparisons，并在大数据集（**$N > 1000$**）时自动跳过 **$O(N^2)$** 算法以节省时间。
+* **Linear Efficiency** : Feature extraction (sortedness, unique ratio) is strictly  **$O(N)$** . It uses hash sets to ensure the prediction process has "zero overhead."
+* **Robustness & Safety** : Includes defensive checks to prevent crashes on empty or single-element arrays. It detects high duplicates (Unique Ratio) and switches to Merge Sort to avoid Quick Sort's worst-case scenarios.
+* **Hardware Awareness** : For tiny datasets ( **$N \le 30$** ), it intelligently switches to simple sorts (Insertion/Bubble) to utilize CPU cache locality and avoid recursion overhead.
+* **Full Benchmarking** : Generates a performance table (Time & Comparisons). It automatically skips **$O(N^2)$** algorithms for large datasets ( **$N > 1000$** ) to save time.
 
-## 技术栈
+## Tech Stack
 
-* **语言** : C++17
-* **依赖** : 标准库 (STL) - `<vector>`, `<algorithm>`, `<chrono>`, `<unordered_set>`, `<random>`
-* **构建工具** : g++ / clang++ (支持 C++17)
+* **Language** : C++17
+* **Dependencies** : Standard Library (STL) - `<vector>`, `<algorithm>`, `<chrono>`, `<unordered_set>`, `<random>`
+* **Build Tool** : g++ / clang++ (supporting C++17)
 
-## 快速开始
+## Quick Start
 
-### 1. 编译项目
+### 1. Compile the Project
 
-请确保你的编译器支持 C++17 标准。在终端中运行以下命令：
-
-**Bash**
-
-```
-g++ -std=c++17 main.cpp sorts.cpp ai.cpp -o sorter
-```
-
-*(Windows 用户请使用 `sort_benchmark.exe` 作为输出文件名)*
-
-### 2. 运行程序
+Ensure your compiler supports C++17. Run the following command in your terminal:
 
 **Bash**
 
 ```
-./sorter
-```
-
-### 3. 使用说明
-
-程序启动后提供交互式菜单：
-
-1. **选择模式** ：
-
-* `Demo datasets`：自动运行一组预设的测试用例（涵盖各种类型和规模）。
-* `Custom dataset`：手动选择数据集类型（随机/近乎有序/逆序/多重复值/大随机）和输入规模。
-
-1. **选择 AI 模式** ：
-
-* `Decision Tree`：基于可解释规则的决策树（默认推荐）。
-* `k-NN`：基于原型的 k 近邻算法。
-* `Custom Rules`：微调后的混合规则。
-
-1. **查看结果** ：
-
-* 程序将输出 AI 的预测结果。
-* 运行所有算法并显示性能表格。
-* 最终判定 AI 预测是否正确（Correct/Wrong）。
-
-## AI 模块逻辑 (Decision Tree 模式)
-
-AI 模块通过分析数据的三个特征做出决策： **Size (**$N$**)** ,  **Sortedness (**$S$**)** ,  **Unique Ratio (**$U$**)** 。
-
-| **场景**     | **条件判断**       | **选择算法**           | **设计理由**                                                                                |
-| ------------------ | ------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------- |
-| **微小数据** | **$N \le 30$**   | **Bubble / Insertion** | **硬件感知** ：避免递归开销，利用缓存局部性。如果极度乱序则用冒泡（基准教学），否则用插排。 |
-| **小数据**   | **$N \le 50$**   | **Insertion Sort**     | **低开销** ：简单算法在小规模下通常优于**$O(N \log N)$**算法。                            |
-| **近乎有序** | **$S \ge 0.90$** | **Insertion Sort**     | **算法特性** ：插入排序在近乎有序数据下接近**$O(N)$**。                                   |
-| **大量重复** | **$U \le 0.20$** | **Merge Sort**         | **风险规避** ：防止 Quick Sort 因 Pivot 重复导致分区不平衡从而退化。                        |
-| **高度逆序** | **$S \le 0.10$** | **Merge Sort**         | **稳定性** ：在最坏乱序下提供稳定的性能保证。                                               |
-| **默认情况** | 其他                     | **Quick Sort**         | **平均最优** ：对于一般的大规模随机数据，快排通常是最快的。                                 |
-
-## 项目结构
-
-* `main.cpp`：程序入口。处理用户输入、数据集生成、基准测试流程控制以及结果输出。
-* `ai.cpp` / `ai.h`： **AI 核心模块** 。包含特征提取函数 (`calculateSortedness`, `calculateUniqueRatio`) 和三种预测模式的实现。
-* `sorts.cpp`： **排序算法实现** 。包含带比较计数和计时的 Bubble, Insertion, Merge, Quick Sort 实现。
-
-
-更新提示：编译示例为
-
-```bash
 g++ -std=c++17 main.cpp sorts.cpp ai.cpp -o sort_benchmark
 ```
+
+*(Windows users please use `sort_benchmark.exe` as the output filename)*
+
+### 2. Run the Program
+
+**Bash**
+
+```
+./sort_benchmark
+```
+
+### 3. Usage Guide
+
+The program provides an interactive menu:
+
+1. **Select Mode** :
+
+* `Demo datasets`: Automatically runs a set of preset test cases (covering various types and sizes).
+* `Custom dataset`: Manually select dataset type and size.
+
+1. **Select AI Mode** :
+
+* `Decision Tree`: Rule-based decision tree (Recommended).
+* `k-NN`: Prototype-based k-Nearest Neighbors.
+* `Custom Rules`: Tuned hybrid rules.
+
+1. **View Results** :
+
+* The program outputs the AI prediction.
+* It runs all algorithms and displays a performance table.
+* It verifies if the AI prediction was **Correct** or  **Wrong** .
+
+## AI Module Logic (Decision Tree)
+
+The AI analyzes three features:  **Size (**$N$**)** ,  **Sortedness (**$S$**)** , and  **Unique Ratio (**$U$**)** .
+
+| **Scenario**        | **Condition**      | **Algorithm**          | **Design Reason**                                                                                                                         |
+| ------------------------- | ------------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tiny Data**       | **$N \le 30$**   | **Bubble / Insertion** | **Hardware Awareness** : Avoids recursion overhead and uses cache locality. Uses Bubble for educational baselines or Insertion otherwise. |
+| **Small Data**      | **$N \le 50$**   | **Insertion Sort**     | **Low Overhead** : Simple algorithms are usually faster than**$O(N \log N)$**at this scale.                                             |
+| **Nearly Sorted**   | **$S \ge 0.90$** | **Insertion Sort**     | **Algorithm Property** : Insertion Sort is nearly**$O(N)$**for sorted data.                                                             |
+| **Many Duplicates** | **$U \le 0.20$** | **Merge Sort**         | **Risk Aversion** : Prevents Quick Sort performance degradation caused by unbalanced partitioning.                                        |
+| **Highly Reversed** | **$S \le 0.10$** | **Merge Sort**         | **Stability** : Guarantees consistent performance even in worst-case ordering.                                                            |
+| **Default**         | Others                   | **Quick Sort**         | **Average Best** : Quick Sort is generally the fastest for large, random datasets.                                                        |
+
+## Project Structure
+
+* `main.cpp`: Entry point. Handles user input, dataset generation, benchmarking flow, and output.
+* `ai.cpp` / `ai.h`:  **AI Core** . Contains feature extraction functions (`calculateSortedness`, `calculateUniqueRatio`) and the three prediction modes.
+* `sorts.cpp`:  **Sorting Implementation** . Contains Bubble, Insertion, Merge, and Quick Sort with comparison counting and timing.
